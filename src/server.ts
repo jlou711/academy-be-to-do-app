@@ -8,6 +8,7 @@ import {
   getDbItemById,
   DbItem,
   updateDbItemById,
+  deleteDbItemById,
 } from "./db";
 import filePath from "./filePath";
 
@@ -35,13 +36,13 @@ app.get("/", (req, res) => {
 });
 
 // GET /items
-app.get("/items", (req, res) => {
+app.get("/notes", (req, res) => {
   const allSignatures = getAllDbItems();
   res.status(200).json(allSignatures);
 });
 
 // POST /items
-app.post<{}, {}, DbItem>("/items", (req, res) => {
+app.post<{}, {}, DbItem>("/notes", (req, res) => {
   // to be rigorous, ought to handle non-conforming request bodies
   // ... but omitting this as a simplification
   const postData = req.body;
@@ -50,7 +51,7 @@ app.post<{}, {}, DbItem>("/items", (req, res) => {
 });
 
 // GET /items/:id
-app.get<{ id: string }>("/items/:id", (req, res) => {
+app.get<{ id: string }>("/notes/:id", (req, res) => {
   const matchingSignature = getDbItemById(parseInt(req.params.id));
   if (matchingSignature === "not found") {
     res.status(404).json(matchingSignature);
@@ -60,8 +61,8 @@ app.get<{ id: string }>("/items/:id", (req, res) => {
 });
 
 // DELETE /items/:id
-app.delete<{ id: string }>("/items/:id", (req, res) => {
-  const matchingSignature = getDbItemById(parseInt(req.params.id));
+app.delete<{ id: string }>("/notes/:id", (req, res) => {
+  const matchingSignature = deleteDbItemById(parseInt(req.params.id));
   if (matchingSignature === "not found") {
     res.status(404).json(matchingSignature);
   } else {
@@ -70,7 +71,7 @@ app.delete<{ id: string }>("/items/:id", (req, res) => {
 });
 
 // PATCH /items/:id
-app.patch<{ id: string }, {}, Partial<DbItem>>("/items/:id", (req, res) => {
+app.patch<{ id: string }, {}, Partial<DbItem>>("/notes/:id", (req, res) => {
   const matchingSignature = updateDbItemById(parseInt(req.params.id), req.body);
   if (matchingSignature === "not found") {
     res.status(404).json(matchingSignature);

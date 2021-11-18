@@ -1,5 +1,12 @@
+import faker, { fake } from "faker";
+
 export interface DbItem {
   // sketch out interface here
+  note: string;
+  type: string;
+  created: string;
+  due: string;
+  completed: boolean;
 }
 
 export interface DbItemWithId extends DbItem {
@@ -21,7 +28,11 @@ export const addDummyDbItems = (n: number): DbItemWithId[] => {
   const createdSignatures: DbItemWithId[] = [];
   for (let count = 0; count < n; count++) {
     const createdSignature = addDbItem({
-      // possibly add some generated data here
+      note: faker.lorem.sentences(2),
+      type: "General",
+      created: new Date().toLocaleDateString("en-GB"),
+      due: "",
+      completed: false,
     });
     createdSignatures.push(createdSignature);
   }
@@ -71,7 +82,7 @@ export const deleteDbItemById = (id: number): DbItemWithId | "not found" => {
 const findIndexOfDbItemById = (id: number): number | "not found" => {
   const matchingIdx = db.findIndex((entry) => entry.id === id);
   // .findIndex returns -1 if not located
-  if (matchingIdx) {
+  if (matchingIdx >= 0) {
     return matchingIdx;
   } else {
     return "not found";
