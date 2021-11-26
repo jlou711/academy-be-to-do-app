@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { Client } from "pg";
 import {
   addDummyDbItems,
   addDbItem,
@@ -16,6 +17,11 @@ import filePath from "./filePath";
 // (comment out if desired, or change the number)
 addDummyDbItems(20);
 
+async function connectClient() {
+  await client.connect();
+}
+
+connectClient();
 const app = express();
 
 /** Parses JSON data in a request automatically */
@@ -27,12 +33,28 @@ app.use(cors());
 dotenv.config();
 
 // use the environment variable PORT, or 4000 as a fallback
+
 const PORT_NUMBER = process.env.PORT ?? 4000;
+const connectionString = process.env.DATABASE_URL ?? null;
+const client = connectionString
+  ? new Client({ connectionString }) // use connection string to heroku
+  : new Client({ database: "notes" }); // use default to local
 
 // API info page
-app.get("/", (req, res) => {
-  const pathToFile = filePath("../public/index.html");
-  res.sendFile(pathToFile);
+// app.get("/", (req, res) => {
+//   const pathToFile = filePath("../public/index.html");
+//   res.sendFile(pathToFile);
+// });
+
+app.get("/", async (req, res) => {
+  const result = await client.query("SELECT * FROM notes");
+  const signatures = result.rows;
+  res.status(200).json({
+    status: "success",
+    data: {
+      signatures,
+    },
+  });
 });
 
 // GET /items
