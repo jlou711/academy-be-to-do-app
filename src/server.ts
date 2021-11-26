@@ -46,7 +46,7 @@ const client = connectionString
 //   res.sendFile(pathToFile);
 // });
 
-app.get("/", async (req, res) => {
+app.get("/test", async (req, res) => {
   const result = await client.query("SELECT * FROM notes");
   const signatures = result.rows;
   res.status(200).json({
