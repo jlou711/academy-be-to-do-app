@@ -17,28 +17,34 @@ import filePath from "./filePath";
 // (comment out if desired, or change the number)
 addDummyDbItems(20);
 
+// read in contents of any environment variables in the .env file
+dotenv.config();
+
+// use the environment variable PORT, or 4000 as a fallback
+const PORT_NUMBER = process.env.PORT ?? 4000;
+const connectionString = process.env.DATABASE_URL ?? null;
+
+console.log(connectionString);
+const client = connectionString
+  ? new Client({
+      connectionString,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    }) // use connection string to heroku
+  : new Client({ database: "notes" }); // use default to local
+
 async function connectClient() {
   await client.connect();
 }
-
 connectClient();
+
 const app = express();
 
 /** Parses JSON data in a request automatically */
 app.use(express.json());
 /** To allow 'Cross-Origin Resource Sharing': https://en.wikipedia.org/wiki/Cross-origin_resource_sharing */
 app.use(cors());
-
-// read in contents of any environment variables in the .env file
-dotenv.config();
-
-// use the environment variable PORT, or 4000 as a fallback
-
-const PORT_NUMBER = process.env.PORT ?? 4000;
-const connectionString = process.env.DATABASE_URL ?? null;
-const client = connectionString
-  ? new Client({ connectionString }) // use connection string to heroku
-  : new Client({ database: "notes" }); // use default to local
 
 // API info page
 // app.get("/", (req, res) => {
