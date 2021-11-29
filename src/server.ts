@@ -54,11 +54,11 @@ app.use(cors());
 
 app.get("/notes", async (req, res) => {
   const result = await client.query("SELECT * FROM notes");
-  const signatures = result.rows;
+  const notes = result.rows;
   res.status(200).json({
     status: "success",
     data: {
-      signatures,
+      notes,
     },
   });
 });
