@@ -24,7 +24,6 @@ dotenv.config();
 const PORT_NUMBER = process.env.PORT ?? 4000;
 const connectionString = process.env.DATABASE_URL ?? null;
 
-console.log(connectionString);
 const client = connectionString
   ? new Client({
       connectionString,
@@ -46,12 +45,7 @@ app.use(express.json());
 /** To allow 'Cross-Origin Resource Sharing': https://en.wikipedia.org/wiki/Cross-origin_resource_sharing */
 app.use(cors());
 
-// API info page
-// app.get("/", (req, res) => {
-//   const pathToFile = filePath("../public/index.html");
-//   res.sendFile(pathToFile);
-// });
-
+// get notes
 app.get("/notes", async (req, res) => {
   const result = await client.query("SELECT * FROM notes");
   const notes = result.rows;
@@ -63,50 +57,75 @@ app.get("/notes", async (req, res) => {
   });
 });
 
-// GET /items
-// app.get("/notes", (req, res) => {
-//   const allSignatures = getAllDbItems();
-//   res.status(200).json(allSignatures);
-// });
-
 // POST /items
-app.post<{}, {}, DbItem>("/notes", (req, res) => {
+app.post<{}, {}, DbItem>("/notes", async (req, res) => {
   // to be rigorous, ought to handle non-conforming request bodies
   // ... but omitting this as a simplification
-  const postData = req.body;
-  const createdSignature = addDbItem(postData);
-  res.status(201).json(createdSignature);
+  const { note, completed } = req.body;
+  const result = await client.query(
+    "INSERT INTO notes VALUES (DEFAULT, $1, 'General', NOW(), NOW(), $2) RETURNING *",
+    [note, completed]
+  );
+  const notes = result.rows;
+  if (result.rowCount === 1) {
+    res.status(201).json({
+      status: "success",
+      data: {
+        notes,
+      },
+    });
+  } else {
+    res.status(404).json(result);
+  }
 });
 
 // GET /items/:id
-app.get<{ id: string }>("/notes/:id", (req, res) => {
-  const matchingSignature = getDbItemById(parseInt(req.params.id));
-  if (matchingSignature === "not found") {
-    res.status(404).json(matchingSignature);
+app.get<{ id: string }>("/notes/:id", async (req, res) => {
+  const result = await client.query("SELECT * FROM notes WHERE id=$1", [
+    req.params.id,
+  ]);
+  const notes = result.rows;
+  if (result.rowCount === 1) {
+    res.status(200).json({
+      status: "success",
+      data: {
+        notes,
+      },
+    });
   } else {
-    res.status(200).json(matchingSignature);
+    res.status(404).json(result);
   }
 });
 
 // DELETE /items/:id
-app.delete<{ id: string }>("/notes/:id", (req, res) => {
-  const matchingSignature = deleteDbItemById(parseInt(req.params.id));
-  if (matchingSignature === "not found") {
-    res.status(404).json(matchingSignature);
+app.delete<{ id: string }>("/notes/:id", async (req, res) => {
+  const result = await client.query(
+    "DELETE FROM notes WHERE id=$1 RETURNING *",
+    [req.params.id]
+  );
+  if (result.rowCount === 1) {
+    res.status(200).json(result);
   } else {
-    res.status(200).json(matchingSignature);
+    res.status(404).json(result);
   }
 });
 
 // PATCH /items/:id
-app.patch<{ id: string }, {}, Partial<DbItem>>("/notes/:id", (req, res) => {
-  const matchingSignature = updateDbItemById(parseInt(req.params.id), req.body);
-  if (matchingSignature === "not found") {
-    res.status(404).json(matchingSignature);
-  } else {
-    res.status(200).json(matchingSignature);
+app.patch<{ id: string }, {}, Partial<DbItem>>(
+  "/notes/:id",
+  async (req, res) => {
+    const { note, completed } = req.body;
+    const result = await client.query(
+      "UPDATE notes SET note=$1, completed = $2 WHERE id = $3 RETURNING *",
+      [note, completed, req.params.id]
+    );
+    if (result.rowCount === 1) {
+      res.status(200).json(result.rows[0]);
+    } else {
+      res.status(404).json(result);
+    }
   }
-});
+);
 
 app.listen(PORT_NUMBER, () => {
   console.log(`Server is listening on port ${PORT_NUMBER}!`);
